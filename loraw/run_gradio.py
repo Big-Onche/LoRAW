@@ -1,6 +1,8 @@
 from stable_audio_tools import get_pretrained_model
 from interface.gradio import create_ui
 import json 
+import webbrowser
+import threading
 
 import torch
 
@@ -16,7 +18,7 @@ def main(args):
         model_half=args.model_half
     )
     interface.queue()
-    interface.launch(share=True, auth=(args.username, args.password) if args.username is not None else None)
+    interface.launch(share=False, inbrowser=True, auth=(args.username, args.password) if args.username else None)
 
 if __name__ == "__main__":
     import argparse
