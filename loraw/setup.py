@@ -7,7 +7,7 @@ setup(
     author='Griffin Page',
     packages=find_packages(),    
     install_requires=[
-        'bitsandbytes'
+        'bitsandbytes',
         'aeiou==0.0.20',
         'alias-free-torch==0.0.6',
         'auraloss==0.4.0',
@@ -28,6 +28,7 @@ setup(
         'pytorch_lightning==2.1.0', 
         'PyWavelets==1.4.1',
         'safetensors',
+        'scipy',
         'sentencepiece==0.1.99',
         's3fs',
         'torch>=2.0.1',
