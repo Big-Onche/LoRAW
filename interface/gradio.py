@@ -520,7 +520,7 @@ def create_sampling_ui(model_config, inpainting=False):
                 global lora_names
                 lora_sliders = []
                 for i in range(min(max_loras, len(lora_names))):
-                    lora_sliders.append(gr.Slider(minimum=0.0, maximum=1.0, step=0.1, value=0.0, label=lora_names[i]))
+                    lora_sliders.append(gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=0.0, label=lora_names[i]))
                 
         with gr.Column():
             audio_output = gr.Audio(label="Output audio", interactive=False)
