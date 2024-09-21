@@ -3,11 +3,15 @@ from interface.gradio import create_ui
 import json 
 import webbrowser
 import threading
+import warnings
 
 import torch
 
 def main(args):
     torch.manual_seed(42)
+
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+    warnings.simplefilter(action='ignore', category=UserWarning)
 
     interface = create_ui(
         model_config_path = args.model_config, 
