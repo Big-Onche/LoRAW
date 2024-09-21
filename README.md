@@ -5,12 +5,26 @@ Designed to be used with Stable Audio Tools
 
 Highly experimental still
 
-# Usage (modified train.py)
+# Installation
+**Automatic installation:**
+Clone this repo and run the install script based on your OS.
 
-Clone this repo, navigate to the root, and run:
-```
-$ pip install .
-```
+**Manual installation:**
+- Clone the repository `git clone https://github.com/Big-Onche/LoRAW.git`
+- Navigate into the cloned directory `cd LoRAW`
+- Set up a virtual environment `python -m venv env`
+- Activate the new environment:
+  - Windows: `env\scripts\activate`
+  - Linux/Mac: `source env/bin/activate`
+- Install torch: pip install torch==2.4.1+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+- Run setup.py: `pip install .\loraw`
+
+## Inference
+- Download [Stable Audio 1.0 checkpoint](https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt) and put it in 'LoRAW/models/checkpoints'
+- Launch Gradio using the run script based on your OS.
+
+# LoRA Training
+ToDO
 
 ## Configure model
 Add a `lora` section to your model config i.e.:
@@ -46,11 +60,6 @@ Then run the modified `train.py` as you would in [stable-audio-tools](https://gi
     - *Default*: false
 
 
-
-## Inference
-Run the modified `run_gradio.py` as you would in [stable-audio-tools](https://github.com/Stability-AI/stable-audio-tools) with the following command line argument:
-- `--lora-ckpt-path`
-    - Your trained lora checkpoint
 
 # Usage (manual)
 
