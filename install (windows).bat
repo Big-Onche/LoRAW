@@ -16,6 +16,9 @@ pip install wheel
 REM Navigate to the folder containing setup.py
 cd loraw
 
+REM Install torch
+pip install torch==2.4.1+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
 REM Install the package
 pip install .
 

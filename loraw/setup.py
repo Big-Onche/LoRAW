@@ -7,7 +7,6 @@ setup(
     author='Griffin Page',
     packages=find_packages(),    
     install_requires=[
-        'bitsandbytes',
         'aeiou==0.0.20',
         'alias-free-torch==0.0.6',
         'auraloss==0.4.0',
@@ -31,8 +30,6 @@ setup(
         'scipy',
         'sentencepiece==0.1.99',
         's3fs',
-        'torch>=2.0.1',
-        'torchaudio>=2.0.2',
         'torchmetrics==0.11.4',
         'tqdm',
         'transformers',
@@ -40,6 +37,7 @@ setup(
         'vector-quantize-pytorch==1.9.14',
         'wandb==0.15.4',
         'webdataset==0.2.48',
-        'x-transformers<1.27.0'
+        'x-transformers<1.27.0',
+        'bitsandbytes'
     ],
 )
