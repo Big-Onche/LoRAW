@@ -1,0 +1,1 @@
+Download: https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt
