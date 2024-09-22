@@ -4,6 +4,7 @@ import os
 import torch
 import pytorch_lightning as pl
 import random
+import warnings
 
 from stable_audio_tools.data.dataset import create_dataloader_from_config
 from stable_audio_tools.models import create_model_from_config
@@ -31,6 +32,21 @@ def main():
     args = get_all_args()
 
     seed = args.seed
+    checkpoint_dir = args.save_dir
+
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+    warnings.simplefilter(action='ignore', category=UserWarning)
+
+    if args.use_lora == 'true':
+        if args.lora_ckpt_path:
+            training_mode = "Pre-trained LoRA training"
+        else:
+            training_mode = "Fresh LoRA training"
+    else:
+        training_mode = "Model fine tuning"
+
+    print(f"Training mode: {training_mode}")
+    print(f"Checkpoint every {args.checkpoint_every} steps, saved in {args.save_dir}")
 
     # Set a different seed for each process if using SLURM
     if os.environ.get("SLURM_PROCID") is not None:
@@ -58,8 +74,9 @@ def main():
     model = create_model_from_config(model_config)
 
     if args.pretrained_ckpt_path:
-        copy_state_dict(model, load_ckpt_state_dict(args.pretrained_ckpt_path))
-    
+        state_dict = load_ckpt_state_dict(args.pretrained_ckpt_path)
+        model.load_state_dict(state_dict)
+
     if args.remove_pretransform_weight_norm == "pre_load":
         remove_weight_norm_from_model(model.pretransform)
 
@@ -74,9 +91,8 @@ def main():
     if args.use_lora == 'true':
         lora = create_lora_from_config(model_config, model)
         if args.lora_ckpt_path:
-            lora.load_weights(
-                torch.load(args.lora_ckpt_path, map_location="cpu")["state_dict"]
-            )
+            lora_weights = torch.load(args.lora_ckpt_path, map_location="cpu")["state_dict"]
+            lora.load_weights(lora_weights)
         lora.activate()
 
     training_wrapper = create_training_wrapper_from_config(model_config, model)
@@ -88,14 +104,18 @@ def main():
     wandb_logger = pl.loggers.WandbLogger(project=args.name)
     wandb_logger.watch(training_wrapper)
 
+    print(f"W&B mode: {wandb_logger.experiment.mode}")
+
     callbacks = []
 
     callbacks.append(ExceptionCallback())
-    
-    if args.save_dir and isinstance(wandb_logger.experiment.id, str):
-        checkpoint_dir = os.path.join(args.save_dir, wandb_logger.experiment.project, wandb_logger.experiment.id, "checkpoints") 
+  
+    if checkpoint_dir is not None:
+        if args.save_dir and isinstance(wandb_logger.experiment.id, str):
+            checkpoint_dir = os.path.join(args.save_dir, wandb_logger.experiment.project, wandb_logger.experiment.id, "checkpoints")
     else:
-        checkpoint_dir = None
+        print("Checkpoint directory is not set, saving to models/loras/")
+        checkpoint_dir = os.path.join('.', 'models', 'loras')
 
     # LORA: Custom checkpoint callback
     if args.use_lora  == 'true':
@@ -103,7 +123,7 @@ def main():
             callbacks.append(LoRAModelCheckpoint(lora=lora, every_n_train_steps=args.checkpoint_every, dirpath=checkpoint_dir, save_top_k=-1))
         else:
             callbacks.append(ReLoRAModelCheckpoint(lora=lora, every_n_train_steps=args.relora_every, dirpath=checkpoint_dir, save_top_k=-1, checkpoint_every_n_updates=args.checkpoint_every // args.relora_every))
-    else:  
+    else:
         callbacks.append(pl.callbacks.ModelCheckpoint(every_n_train_steps=args.checkpoint_every, dirpath=checkpoint_dir, save_top_k=-1))
 
     callbacks.append(ModelConfigEmbedderCallback(model_config))
@@ -133,42 +153,48 @@ def main():
     else:
         strategy = 'ddp_find_unused_parameters_true' if args.num_gpus > 1 else "auto" 
 
+    try:
+        if args.quantize == 'true':
+            plugins = BitsandbytesPrecisionPlugin(mode="nf4", dtype=torch.float16, ignore_modules={*lora.residual_modules})
+            trainer = pl.Trainer(
+                devices=args.num_gpus,
+                accelerator="gpu",
+                num_nodes = args.num_nodes,
+                strategy=strategy,
+                plugins=plugins,
+                accumulate_grad_batches=args.accum_batches, 
+                callbacks=callbacks,
+                logger=wandb_logger,
+                log_every_n_steps=1,
+                max_epochs=10000000,
+                default_root_dir=args.save_dir,
+                gradient_clip_val=args.gradient_clip_val,
+                reload_dataloaders_every_n_epochs = 0,
+            )
+        else:
+            trainer = pl.Trainer(
+                devices=args.num_gpus,
+                accelerator="gpu",
+                num_nodes = args.num_nodes,
+                strategy=strategy,
+                precision=args.precision,
+                accumulate_grad_batches=args.accum_batches, 
+                callbacks=callbacks,
+                logger=wandb_logger,
+                log_every_n_steps=1,
+                max_epochs=10000000,
+                default_root_dir=args.save_dir,
+                gradient_clip_val=args.gradient_clip_val,
+                reload_dataloaders_every_n_epochs = 0,
+            )
+    except Exception as e:
+        print(f"Failed to initialize trainer: {e}")
 
-    if args.quantize == 'true':
-        plugins = BitsandbytesPrecisionPlugin(mode="nf4", dtype=torch.float16, ignore_modules={*lora.residual_modules})
-        trainer = pl.Trainer(
-            devices=args.num_gpus,
-            accelerator="gpu",
-            num_nodes = args.num_nodes,
-            strategy=strategy,
-            plugins=plugins,
-            accumulate_grad_batches=args.accum_batches, 
-            callbacks=callbacks,
-            logger=wandb_logger,
-            log_every_n_steps=1,
-            max_epochs=10000000,
-            default_root_dir=args.save_dir,
-            gradient_clip_val=args.gradient_clip_val,
-            reload_dataloaders_every_n_epochs = 0,
-        )
-    else:
-        trainer = pl.Trainer(
-            devices=args.num_gpus,
-            accelerator="gpu",
-            num_nodes = args.num_nodes,
-            strategy=strategy,
-            precision=args.precision,
-            accumulate_grad_batches=args.accum_batches, 
-            callbacks=callbacks,
-            logger=wandb_logger,
-            log_every_n_steps=1,
-            max_epochs=10000000,
-            default_root_dir=args.save_dir,
-            gradient_clip_val=args.gradient_clip_val,
-            reload_dataloaders_every_n_epochs = 0,
-        )
-
-    trainer.fit(training_wrapper, train_dl, ckpt_path=args.ckpt_path if args.ckpt_path else None)
+    try:
+        print("Starting training...")
+        trainer.fit(training_wrapper, train_dl, ckpt_path=args.ckpt_path if args.ckpt_path else None)
+    except Exception as e:
+        print(f"Training failed: {e}")
 
 if __name__ == '__main__':
     main()
