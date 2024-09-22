@@ -39,6 +39,7 @@ setup(
         'webdataset==0.2.48',
         'x-transformers<1.27.0',
         'dill',
+        'customtkinter',
         'bitsandbytes'
     ],
 )
