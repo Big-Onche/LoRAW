@@ -16,6 +16,7 @@ class App(ctk.CTk):
         self.dataset_config = ctk.StringVar(value=os.path.join(current_dir, 'datasets', 'exemple', 'config.json'))
         self.batch_size = ctk.IntVar(value=4)
         self.ckpt_every = ctk.IntVar(value=500)
+        self.train_lora = ctk.StringVar(value="true")
 
         # configure window
         self.title("LoRAW Training Setup")
@@ -29,6 +30,17 @@ class App(ctk.CTk):
 
         # Create GUI components
         self.create_widgets()
+
+    def create_widgets(self):
+        self.UI_browse_row(0, "Checkpoint Path", self.pretrained_ckpt_path, True, "Select model checkpoint", "ckpt") # Pretrained checkpoint path
+        self.UI_browse_row(1, "Model Config", self.model_config, True, "Select model configuration file", "json") # Model config
+        self.UI_browse_row(2, "Dataset Config", self.dataset_config, True, "Select dataset configuration file", "json") # Dataset config
+        self.UI_browse_row(3, "Pretrained LoRA Checkpoint", self.lora_ckpt_path, True, "Select LoRA checkpoint", "ckpt") # Pretrained lora checkpoint path
+        self.UI_browse_row(4, "Save Directory", self.save_dir, "Select save folder") # Save directory
+        self.UI_slider_row(5, "Batch Size", self.batch_size, 1, 16) # Batch size slider
+        self.UI_slider_row(6, "Checkpoint every (steps)", self.ckpt_every, 10, 10000) # Checkpoint every slider
+        self.UI_checkbox(7, "Train LoRA", self.train_lora) # LoRA training checkbox
+        ctk.CTkButton(self, text="Launch Training", command=self.launch_training).grid(row=8, columnspan=3, pady=10) # Launch button
 
     def UI_browse_row(self, row, ui_text, var, browse_text, is_file=False, extension=""):
         ctk.CTkLabel(self, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
@@ -44,15 +56,9 @@ class App(ctk.CTk):
         slider.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
         ctk.CTkEntry(self, textvariable=var, width=140).grid(row=row, column=2, padx=5, pady=5)
 
-    def create_widgets(self):
-        self.UI_browse_row(0, "Checkpoint Path", self.pretrained_ckpt_path, True, "Select model checkpoint", "ckpt") # Pretrained checkpoint path
-        self.UI_browse_row(1, "Model Config", self.model_config, True, "Select model configuration file", "json") # Model config
-        self.UI_browse_row(2, "Dataset Config", self.dataset_config, True, "Select dataset configuration file", "json") # Dataset config
-        self.UI_browse_row(3, "Pretrained LoRA Checkpoint", self.lora_ckpt_path, True, "Select LoRA checkpoint", "ckpt") # Pretrained lora checkpoint path
-        self.UI_browse_row(4, "Save Directory", self.save_dir, "Select save folder") # Save directory
-        self.UI_slider_row(5, "Batch Size", self.batch_size, 1, 16) # Batch size slider
-        self.UI_slider_row(6, "Checkpoint every (steps)", self.ckpt_every, 10, 10000) # Checkpoint every slider
-        ctk.CTkButton(self, text="Launch Training", command=self.launch_training).grid(row=7, columnspan=3, pady=10) # Launch button
+    def UI_checkbox(self, row, ui_text, var):
+        checkbox = ctk.CTkCheckBox(self, text=ui_text, variable=var, onvalue="true", offvalue="false")
+        checkbox.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
 
     def browse_file(self, title, type, var):
         file_path = ctk.filedialog.askopenfilename(
@@ -95,7 +101,7 @@ class App(ctk.CTk):
             f'--dataset-config={self.dataset_config.get()}',
             f'--batch-size={self.batch_size.get()}',
             f'--checkpoint-every={self.ckpt_every.get()}',
-            f'--use-lora=true'
+            f'--use-lora={self.train_lora.get()}'
         ]
 
         self.destroy()  # Close window
