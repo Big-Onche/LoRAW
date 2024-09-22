@@ -46,7 +46,6 @@ def main():
         training_mode = "Model fine tuning"
 
     print(f"Training mode: {training_mode}")
-    print(f"Checkpoint every {args.checkpoint_every} steps, saved in {args.save_dir}")
 
     # Set a different seed for each process if using SLURM
     if os.environ.get("SLURM_PROCID") is not None:
@@ -89,13 +88,14 @@ def main():
 
     # LORA: Create and activate
     if args.use_lora == 'true':
-        lora = create_lora_from_config(model_config, model)
+        lora = create_lora_from_config(model_config, model, args.lora_rank, args.lora_alpha)
         if args.lora_ckpt_path:
             lora_weights = torch.load(args.lora_ckpt_path, map_location="cpu")["state_dict"]
             lora.load_weights(lora_weights)
         lora.activate()
 
     training_wrapper = create_training_wrapper_from_config(model_config, model)
+    print(f"Checkpoint every {args.checkpoint_every} steps, saved in {args.save_dir}")
 
     # LORA: Prepare training
     if args.use_lora == 'true':

@@ -51,11 +51,13 @@ class App(ctk.CTk):
         self.batch_size = ctk.IntVar(value=4)
         self.ckpt_every = ctk.IntVar(value=500)
         self.train_lora = ctk.StringVar(value="true")
+        self.lora_rank = ctk.IntVar(value=16)
+        self.lora_alpha = ctk.IntVar(value=16)
 
         # configure window
         self.title("LoRAW Training Setup")
         width = 730
-        height = 350
+        height = 450
         self.geometry(f"{width}x{height}")
         self.resizable(False, False)
         x = (self.winfo_screenwidth() // 2) - (width // 2)
@@ -73,8 +75,10 @@ class App(ctk.CTk):
         self.UI_browse_row(4, "Save Directory", self.save_dir, "Select save folder") # Save directory
         self.UI_slider_row(5, "Batch Size", self.batch_size, 1, 16) # Batch size slider
         self.UI_slider_row(6, "Checkpoint every (steps)", self.ckpt_every, 10, 10000) # Checkpoint every slider
-        self.UI_checkbox(7, "Train LoRA", self.train_lora, "Check this box to enable LoRA training, and uncheck for full model finetuning") # LoRA training checkbox
-        ctk.CTkButton(self, text="Launch Training", command=self.launch_training).grid(row=8, columnspan=3, pady=10) # Launch button
+        self.UI_slider_row(7, "Network Rank (Dimension)", self.lora_rank, 4, 128, True) # LoRA rank
+        self.UI_slider_row(8, "Network Alpha", self.lora_alpha, 4, 128, True) # LoRA alpha
+        self.UI_checkbox(9, "Train LoRA", self.train_lora, "Check this box to enable LoRA training, and uncheck for full model finetuning") # LoRA training checkbox
+        ctk.CTkButton(self, text="Launch Training", command=self.launch_training).grid(row=10, columnspan=3, pady=10) # Launch button
 
     def UI_browse_row(self, row, ui_text, var, browse_text, is_file=False, extension=""):
         ctk.CTkLabel(self, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
@@ -84,11 +88,43 @@ class App(ctk.CTk):
         else:
             ctk.CTkButton(self, text="Browse", command=lambda: self.browse_folder(var)).grid(row=row, column=2, padx=5, pady=5)
 
-    def UI_slider_row(self, row, ui_text, var, min, max):
+    def UI_slider_row(self, row, ui_text, var, min_val, max_val, pow_two=False):
+        def enforce_power_of_two(value):
+            pow_values = [4, 8, 16, 32, 64, 128]
+    
+            if pow_two:
+                # Ensure the value is within the range of min_val and max_val
+                if min_val <= value <= max_val:
+                    # Calculate the index based on the slider value
+                    index = pow_values.index(min(pow_values, key=lambda x: abs(x - value)))
+                    var.set(pow_values[index])
+                else:
+                    # Set to the nearest bound if out of range
+                    if value < min_val:
+                        var.set(pow_values[0])  # Set to the smallest power of 2
+                    elif value > max_val:
+                        var.set(pow_values[-1])  # Set to the largest power of 2
+
+        def on_slider_change(value):
+            value = float(value)
+            if pow_two:
+                enforce_power_of_two(value)
+            else:
+                var.set(int(value))  # Set the value directly if pow_two is False
+    
+        # Create label
         ctk.CTkLabel(self, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
-        slider = ctk.CTkSlider(self, from_=min, to=max, variable=var, number_of_steps=max)
+    
+        # Create slider and bind it to on_slider_change to adjust to nearest power of two if needed
+        slider = ctk.CTkSlider(self, from_=min_val, to=max_val, variable=var, number_of_steps=max_val - min_val + 1, command=on_slider_change)
         slider.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
+    
+        # Create entry field
         ctk.CTkEntry(self, textvariable=var, width=140).grid(row=row, column=2, padx=5, pady=5)
+
+        # Initial enforcement to ensure it's set correctly
+        if pow_two:
+            enforce_power_of_two(var.get())
 
     def UI_checkbox(self, row, ui_text, var, tooltip_text = ""):
         ctk.CTkLabel(self, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
@@ -138,7 +174,9 @@ class App(ctk.CTk):
             f'--dataset-config={self.dataset_config.get()}',
             f'--batch-size={self.batch_size.get()}',
             f'--checkpoint-every={self.ckpt_every.get()}',
-            f'--use-lora={self.train_lora.get()}'
+            f'--use-lora={self.train_lora.get()}',
+            f'--lora-rank={self.lora_rank.get()}',
+            f'--lora-alpha={self.lora_alpha.get()}'
         ]
 
         self.destroy()  # Close window

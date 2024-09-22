@@ -311,7 +311,7 @@ class LoRAMerger(LoRAWrapper):
         print('Base model weights restored from backup')
     
 
-def create_lora_from_config(config, model):
+def create_lora_from_config(config, model, ui_rank=0, ui_alpha=0):
     lora_config = config["lora"]
 
     model_type = config["model_type"]
@@ -322,11 +322,17 @@ def create_lora_from_config(config, model):
     multiplier = lora_config.get("multiplier", None)
     assert multiplier is not None, "Must specify multiplier in config"
 
-    rank = lora_config.get("rank", None)
-    assert rank is not None, "Must specify rank in config"
+    if ui_rank:
+        rank = int(ui_rank)
+    else:
+        rank = lora_config.get("rank", None)
+        assert rank is not None, "Must specify rank in config"
 
-    alpha = lora_config.get("alpha", None)
-    assert alpha is not None, "Must specify alpha in config"
+    if ui_rank:
+        alpha = int(ui_alpha)
+    else:
+        alpha = lora_config.get("alpha", None)
+        assert alpha is not None, "Must specify alpha in config"
 
     dropout = lora_config.get("dropout", None)
     if dropout == 0: dropout = None
@@ -337,6 +343,8 @@ def create_lora_from_config(config, model):
     lr = lora_config.get("lr", None)
 
     weight_decompose = lora_config.get("weight_decompose", False)
+
+    print(f"LoRA params: Rank: {rank} | Alpha: {alpha} | Learning rate: {lr}")
 
     lora = LoRAWrapper(
         model,
