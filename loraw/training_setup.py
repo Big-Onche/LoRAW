@@ -3,6 +3,40 @@ import subprocess
 import sys
 import customtkinter as ctk
 
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+
+    def show_tooltip(self, event=None):
+        # Create a small window for the tooltip
+        if self.tooltip_window or not self.text:
+            return
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25  # Position the tooltip slightly right
+        y += self.widget.winfo_rooty() + 25  # Position the tooltip slightly down
+
+        # Create a Toplevel window for the tooltip
+        self.tooltip_window = ctk.CTkToplevel(self.widget)
+        self.tooltip_window.wm_overrideredirect(True) # Remove window decorations
+        self.tooltip_window.geometry(f"+{x}+{y}")
+
+        # Create a frame to hold the label
+        frame = ctk.CTkFrame(self.tooltip_window, fg_color="#48484B")
+        frame.pack(padx=5, pady=0)
+
+        # Create the label inside the frame
+        label = ctk.CTkLabel(frame, text=self.text, text_color="white")
+        label.pack(padx=10, pady=5)
+
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -39,7 +73,7 @@ class App(ctk.CTk):
         self.UI_browse_row(4, "Save Directory", self.save_dir, "Select save folder") # Save directory
         self.UI_slider_row(5, "Batch Size", self.batch_size, 1, 16) # Batch size slider
         self.UI_slider_row(6, "Checkpoint every (steps)", self.ckpt_every, 10, 10000) # Checkpoint every slider
-        self.UI_checkbox(7, "Train LoRA", self.train_lora) # LoRA training checkbox
+        self.UI_checkbox(7, "Train LoRA", self.train_lora, "Check this box to enable LoRA training, and uncheck for full model finetuning") # LoRA training checkbox
         ctk.CTkButton(self, text="Launch Training", command=self.launch_training).grid(row=8, columnspan=3, pady=10) # Launch button
 
     def UI_browse_row(self, row, ui_text, var, browse_text, is_file=False, extension=""):
@@ -56,9 +90,12 @@ class App(ctk.CTk):
         slider.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
         ctk.CTkEntry(self, textvariable=var, width=140).grid(row=row, column=2, padx=5, pady=5)
 
-    def UI_checkbox(self, row, ui_text, var):
-        checkbox = ctk.CTkCheckBox(self, text=ui_text, variable=var, onvalue="true", offvalue="false")
+    def UI_checkbox(self, row, ui_text, var, tooltip_text = ""):
+        ctk.CTkLabel(self, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
+        checkbox = ctk.CTkCheckBox(self, text="", variable=var, onvalue="true", offvalue="false")
         checkbox.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
+        if tooltip_text:
+            ToolTip(checkbox, tooltip_text)
 
     def browse_file(self, title, type, var):
         file_path = ctk.filedialog.askopenfilename(
