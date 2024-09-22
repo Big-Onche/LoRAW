@@ -1,7 +1,5 @@
-# LoRAW
-Low Rank Adaptation for Waveforms
-
-Designed to be used with Stable Audio Tools
+# LoRAW UI
+Low Rank Adaptation for Waveforms with auto-installer and GUI to set up LoRA training.
 
 Highly experimental still
 
@@ -24,11 +22,23 @@ Clone this repo and run the install script based on your OS.
 - Launch Gradio using the run script based on your OS.
 
 # LoRA Training
-ToDO
+- Setup your dataset
+  - Create a folder with your audio and text files.
+  - The text files should contain the prompts based on the audio sample.
+  - Tweak 'config.json', and 'metadata.py' from the folder datasets/example according to your dataset.
+  - Supported audio formats: flac, wav, mp3, m4a, ogg, opus.
+- Launch the GUI using the Train script based on your OS.
+- Select your dataset's config.json file in 'Dataset Config'
+- Launch the training.
+
+#  First impressions on LoRA training
+- Sound effect: With a single sound effect and some speed and pitch variations like in the example dataset, you can get a good convergence after 200/300 steps to create "natural" variations of the same sound.
+- Music instruments: The convergence seems fast as the sound effects, but a wider dataset will be better for melody diversity.
+- Music style: It seems to require many more steps to get something.
+- Melody: Not tested.
+- Voices: Not tested.
 
 ## Configure model
-Add a `lora` section to your model config i.e.:
-
 ```JSON
 "lora": {
     "component_whitelist": ["transformer"],
