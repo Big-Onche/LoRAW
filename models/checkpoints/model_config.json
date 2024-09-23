@@ -110,16 +110,14 @@
             }
         },
         "demo": {
-            "demo_every": 2000,
-            "demo_steps": 250,
-            "num_demos": 4,
+            "demo_every": 100,
+            "demo_steps": 100,
+            "num_demos": 2,
             "demo_cond": [
-                {"prompt": "Amen break 174 BPM", "seconds_start": 0, "seconds_total": 12},
-                {"prompt": "A beautiful orchestral symphony, classical music", "seconds_start": 0, "seconds_total": 160},
-                {"prompt": "Chill hip-hop beat, chillhop", "seconds_start": 0, "seconds_total": 190},
-                {"prompt": "A pop song about love and loss", "seconds_start": 0, "seconds_total": 180}
+                {"prompt": "shotgun shot with shells falling", "seconds_start": 0, "seconds_total": 5},
+                {"prompt": "shotgun shot with shells falling, battlefield ambience with distant shots", "seconds_start": 0, "seconds_total": 47}
             ],
-            "demo_cfg_scales": [3, 6, 9]
+            "demo_cfg_scales": [7]
         }
     },
     "lora": {
