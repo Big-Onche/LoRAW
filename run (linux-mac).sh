@@ -11,7 +11,7 @@ source env/bin/activate
 export PYTHONPATH="$SCRIPT_DIR:$SCRIPT_DIR/loraw"
 
 # Run the Python script as if it is in the root folder
-python loraw/run_gradio.py --ckpt-path ".\models\checkpoints\model.ckpt" --model-config ".\models\checkpoints\model_config.json" --lora-dir ".\models\loras"
+python loraw\gui.py
 
 # Keep the terminal open
 read -p "Press [Enter] to continue..."
