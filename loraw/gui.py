@@ -50,22 +50,23 @@ class Tabs(ctk.CTkTabview):
         self.ui = UIPresets(self)
 
         # Create tabs
-        self.add("Use model")
-        self.add("Train LoRA")
-
+        self.add("Run Stable Audio 1.0")
+        self.add("Train a LoRA")
+        self.add("Finetune Stable Audio")
+		
         # Configure overall tab appearance
         self.configure(height=480, border_color="red")
         for button in self._segmented_button._buttons_dict.values():
-            button.configure(width=120, height=30, font=("TkDefaultFont", 16, "bold"))
+            button.configure(width=170, height=30, font=("TkDefaultFont", 14, "bold"))
 
         # Configure columns
-        for tab_name in ["Use model", "Train LoRA"]:
+        for tab_name in ["Run Stable Audio 1.0", "Train a LoRA", "Finetune Stable Audio"]:
             tab = self.tab(tab_name)
             tab.grid_columnconfigure(0, minsize=180)
             tab.grid_columnconfigure(1, minsize=400)
 
         # Set default tab
-        self.set("Use model")
+        self.set("Run Stable Audio 1.0")
         self.show_inference_tab()
 
         # Handle tab switching
@@ -75,14 +76,15 @@ class Tabs(ctk.CTkTabview):
     def on_tab_change(self):
         selected_tab_name = self.get()
 
-        if selected_tab_name == "Use model":
+        if selected_tab_name == "Run Stable Audio 1.0":
             self.show_inference_tab()
-        elif selected_tab_name == "Train LoRA":
-            self.show_train_tab()
-
+        elif selected_tab_name == "Train a LoRA":
+            self.show_lora_train_tab()
+        elif selected_tab_name == "Finetune Stable Audio":
+            self.show_finetune_tab()
 
     def show_inference_tab(self):
-        tab = self.tab("Use model")
+        tab = self.tab("Run Stable Audio 1.0")
 
         self.ui.UI_browse_row(tab, 0, "Checkpoint Path", self.app.pretrained_ckpt_path, "Select model checkpoint", True, "ckpt")
         self.ui.UI_browse_row(tab, 1, "Model Config", self.app.model_config, "Select model configuration file", True, "json")
@@ -91,9 +93,10 @@ class Tabs(ctk.CTkTabview):
         ctk.CTkButton(tab, text="Launch Gradio", command=lambda: self.app.launch(False)).grid(row=4, columnspan=3, pady=10)
 
 
-    def show_train_tab(self):
-        tab = self.tab("Train LoRA")
-
+    def show_lora_train_tab(self):
+        tab = self.tab("Train a LoRA")
+        self.app.train_lora=ctk.StringVar(value="true")
+		
         self.ui.UI_browse_row(tab, 0, "Checkpoint Path", self.app.pretrained_ckpt_path, "Select model checkpoint", True, "ckpt")
         self.ui.UI_browse_row(tab, 1, "Model Config", self.app.model_config, "Select model configuration file", True, "json")
         self.ui.UI_browse_row(tab, 2, "Dataset Config", self.app.dataset_config, "Select dataset configuration file", True, "json")
@@ -103,9 +106,21 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_slider_row(tab, 6, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
         self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, True)
         self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, True)
-        self.ui.UI_checkbox(tab, 9, "Train LoRA", self.app.train_lora, "Check this box to enable LoRA training, and uncheck for full model finetuning")
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
 
+
+    def show_finetune_tab(self):
+        tab = self.tab("Finetune Stable Audio")
+        self.app.train_lora=ctk.StringVar(value="false")
+
+        self.ui.UI_browse_row(tab, 0, "Checkpoint Path", self.app.pretrained_ckpt_path, "Select model checkpoint", True, "ckpt")
+        self.ui.UI_browse_row(tab, 1, "Model Config", self.app.model_config, "Select model configuration file", True, "json")
+        self.ui.UI_browse_row(tab, 2, "Dataset Config", self.app.dataset_config, "Select dataset configuration file", True, "json")
+        self.ui.UI_browse_row(tab, 3, "Save Directory", self.app.save_dir)
+        self.ui.UI_slider_row(tab, 4, "Batch Size", self.app.batch_size, 1, 16)
+        self.ui.UI_slider_row(tab, 5, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
+        self.ui.UI_dropdown(tab, 6, "Precision", self.app.precision, options=["16-mixed", "16-true"], tooltip_text="16-true: 8GB VRAM. 16-mixed: 12GB VRAM")
+        ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
 
 
 class UIPresets:
@@ -159,6 +174,15 @@ class UIPresets:
             ToolTip(checkbox, tooltip_text)
 
 
+    def UI_dropdown(self, parent, row, ui_text, var, options, tooltip_text=""):
+        ctk.CTkLabel(parent, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
+        dropdown = ctk.CTkOptionMenu(parent, variable=var, values=options)
+        dropdown.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
+
+        if tooltip_text:
+            ToolTip(dropdown, tooltip_text)
+
+
     def browse_file(self, title, type, var):
         file_path = ctk.filedialog.askopenfilename(
             title=title, 
@@ -193,9 +217,10 @@ class App(ctk.CTk):
         self.lora_rank = ctk.IntVar(value=16)
         self.lora_alpha = ctk.IntVar(value=16)
         self.model_half = ctk.StringVar(value="false")
+        self.precision = ctk.StringVar(value="16-mixed")
 
         # Configure window
-        self.title("LoRAW UI v1.0")
+        self.title("LoRAW UI v0.3")
         width = 792
         height = 510
         self.geometry(f"{width}x{height}")
@@ -242,6 +267,8 @@ class App(ctk.CTk):
                 f'--lora-rank={self.lora_rank.get()}',
                 f'--lora-alpha={self.lora_alpha.get()}'
             ]
+            if self.train_lora.get() == "true":
+                command.append(f'--precision={self.precision.get()}')
         else:
             command = [
                 python_executable, 'loraw/run_gradio.py',
