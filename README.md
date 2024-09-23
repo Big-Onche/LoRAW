@@ -18,10 +18,14 @@ Clone this repo ('git clone https://github.com/Big-Onche/LoRAW.git') and run the
 - Run setup.py: `pip install .\loraw`
 
 # Inference
+**VRAM requirement: 8GB at full precision, 6GB with half precision.**
+
 - Download [Stable Audio 1.0 checkpoint](https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt) and put it in 'LoRAW/models/checkpoints'
 - Launch the Gradio interface using the run script based on your OS.
 
 # LoRA Training
+**VRAM requirement: 8GB**
+
 - Setup your dataset
   - Create a folder with your audio and text files.
   - The text files should contain the prompts based on the audio sample.
@@ -42,6 +46,9 @@ Clone this repo ('git clone https://github.com/Big-Onche/LoRAW.git') and run the
 | Music style          | 1000+   | 0.0001 or higher? | May require higher than 16 in neural dim | It seems to require many steps to get something, separating percussion, bass, melodies, etc. in the dataset appears to help. |
 | Melody               | / | / | / | Not tested |
 | Voice                | / | / | / | Not tested |
+
+# Pre-trained model fine-tuning 
+**VRAM requirement: 12GB with 16-mixed, 8GB with 16-true**
 
 ## Configure model
 ```JSON
