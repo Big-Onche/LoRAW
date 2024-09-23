@@ -105,8 +105,8 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_slider_row(tab, 5, "Batch Size", self.app.batch_size, 1, 16)
         self.ui.UI_slider_row(tab, 6, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
         self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, True)
-        self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, True)
-        self.ui.UI_slider_row(tab, 9, "Learning rate", self.app.learning_rate, 0.00001, 0.001)
+        self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, False, True)
+        self.ui.UI_slider_row(tab, 9, "Learning rate", self.app.learning_rate, 0.00001, 0.001, True)
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
 
 
@@ -138,7 +138,7 @@ class UIPresets:
             ctk.CTkButton(parent, text="Browse", command=lambda: self.browse_folder(var)).grid(row=row, column=2, padx=5, pady=5)
 
 
-    def UI_slider_row(self, parent, row, ui_text, var, min_val, max_val, pow_two=False):
+    def UI_slider_row(self, parent, row, ui_text, var, min_val, max_val, float_val=False, pow_two=False):
         def enforce_power_of_two(value):
             pow_values = [4, 8, 16, 32, 64, 128]
             if pow_two:
@@ -158,7 +158,7 @@ class UIPresets:
             if pow_two:
                 enforce_power_of_two(value)
             else:
-                var.set(value)
+                var.set(float(value) if float_val else int(value))
 
         if max_val < 1:
             steps = 100  # Allow continuous movement
