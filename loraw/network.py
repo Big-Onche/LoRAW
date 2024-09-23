@@ -248,16 +248,15 @@ class LoRAWrapper:
             if module.lora_dim != rank:
                 module.resize(rank)
 
-            # Update up and down
-            lora_multiplier = 1.0 if is_dora else multiplier
-            module.lora_down.weight.data = (weights['lora_down'] * lora_multiplier).detach()
-            module.lora_up.weight.data = (weights['lora_up'] * lora_multiplier).detach()
+            # Apply the multiplier uniformly to LoRA and DoRA
+            module.lora_down.weight.data = (weights['lora_down'] * multiplier).detach()
+            module.lora_up.weight.data = (weights['lora_up'] * multiplier).detach()
 
             # Handle DoRA magnitude
             if is_dora:
                 if module.dora_mag is None:
                     module.dora_mag = torch.nn.Linear(1, module.out_dim)
-                module.dora_mag.weight.data = (weights['lora_down'] * multiplier).detach()
+                module.dora_mag.weight.data = (weights['dora_mag'] * multiplier).detach()
             else:
                 module.dora_mag = None
 
@@ -265,7 +264,7 @@ class LoRAWrapper:
     def merge_weights(self, residual_weights, multiplier=1.0):
         for name, weight in residual_weights.items():
             param = self.residual_modules.state_dict()[name]
-            param.copy_(param + residual_weights * multiplier)
+            param.copy_(param + weight * multiplier)
 
     def extract_diff(self, tuned_model):
         lora_weights = calculate_svds(
