@@ -88,7 +88,7 @@ def main():
 
     # LORA: Create and activate
     if args.use_lora == 'true':
-        lora = create_lora_from_config(model_config, model, args.lora_rank, args.lora_alpha)
+        lora = create_lora_from_config(model_config, model, args.lora_rank, args.lora_alpha, args.learning_rate)
         if args.lora_ckpt_path:
             lora_weights = torch.load(args.lora_ckpt_path, map_location="cpu")["state_dict"]
             lora.load_weights(lora_weights)

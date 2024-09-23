@@ -311,7 +311,7 @@ class LoRAMerger(LoRAWrapper):
         print('Base model weights restored from backup')
     
 
-def create_lora_from_config(config, model, ui_rank=0, ui_alpha=0):
+def create_lora_from_config(config, model, ui_rank=0, ui_alpha=0, ui_lr=0.0):
     lora_config = config["lora"]
 
     model_type = config["model_type"]
@@ -340,7 +340,10 @@ def create_lora_from_config(config, model, ui_rank=0, ui_alpha=0):
     module_dropout = lora_config.get("module_dropout", None)
     if module_dropout == 0: module_dropout = None
 
-    lr = lora_config.get("lr", None)
+    if ui_lr:
+        lr = float(ui_lr)
+    else:
+        lr = lora_config.get("lr", None)
 
     weight_decompose = lora_config.get("weight_decompose", False)
 

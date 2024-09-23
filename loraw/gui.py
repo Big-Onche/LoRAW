@@ -106,6 +106,7 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_slider_row(tab, 6, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
         self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, True)
         self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, True)
+        self.ui.UI_slider_row(tab, 9, "Learning rate", self.app.learning_rate, 0.00001, 0.001)
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
 
 
@@ -120,7 +121,7 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_slider_row(tab, 4, "Batch Size", self.app.batch_size, 1, 16)
         self.ui.UI_slider_row(tab, 5, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
         self.ui.UI_dropdown(tab, 6, "Precision", self.app.precision, options=["16-mixed", "16-true"], tooltip_text="16-true: 8GB VRAM. 16-mixed: 12GB VRAM")
-        ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
+        ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=7, columnspan=3, pady=10)
 
 
 class UIPresets:
@@ -152,13 +153,20 @@ class UIPresets:
 
         def on_slider_change(value):
             value = float(value)
+            if value < 1:
+                value = round(value, 5)
             if pow_two:
                 enforce_power_of_two(value)
             else:
-                var.set(int(value))
+                var.set(value)
+
+        if max_val < 1:
+            steps = 100  # Allow continuous movement
+        else:
+            steps = max_val - min_val + 1  # Use discrete steps for smaller values
 
         ctk.CTkLabel(parent, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
-        slider = ctk.CTkSlider(parent, from_=min_val, to=max_val, variable=var, number_of_steps=max_val - min_val + 1, command=on_slider_change)
+        slider = ctk.CTkSlider(parent, from_=min_val, to=max_val, variable=var, number_of_steps=steps, command=on_slider_change)
         slider.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
         ctk.CTkEntry(parent, textvariable=var, width=140).grid(row=row, column=2, padx=5, pady=5)
 
@@ -216,6 +224,7 @@ class App(ctk.CTk):
         self.train_lora = ctk.StringVar(value="true")
         self.lora_rank = ctk.IntVar(value=16)
         self.lora_alpha = ctk.IntVar(value=16)
+        self.learning_rate = ctk.DoubleVar(value=1e-4)
         self.model_half = ctk.StringVar(value="false")
         self.precision = ctk.StringVar(value="16-mixed")
 
@@ -268,6 +277,8 @@ class App(ctk.CTk):
                 f'--lora-alpha={self.lora_alpha.get()}'
             ]
             if self.train_lora.get() == "true":
+                command.append(f'--learning-rate={self.learning_rate.get()}')
+            else:
                 command.append(f'--precision={self.precision.get()}')
         else:
             command = [
