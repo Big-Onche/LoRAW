@@ -218,7 +218,7 @@ class App(ctk.CTk):
         self.save_dir = ctk.StringVar(value=os.path.join(current_dir, 'models', 'loras'))
         self.lora_dir = self.save_dir
         self.lora_ckpt_path = ctk.StringVar()
-        self.dataset_config = ctk.StringVar(value=os.path.join(current_dir, 'datasets', 'exemple', 'config.json'))
+        self.dataset_config = ctk.StringVar(value=os.path.join(current_dir, 'datasets', 'example', 'config.json'))
         self.batch_size = ctk.IntVar(value=4)
         self.ckpt_every = ctk.IntVar(value=500)
         self.train_lora = ctk.StringVar(value="true")
