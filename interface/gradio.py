@@ -4,6 +4,7 @@ import gradio as gr
 import json 
 import torch
 import torchaudio
+from datetime import datetime
 import os
 
 from aeiou.viz import audio_spectrogram_image
@@ -214,12 +215,34 @@ def generate_cond(
     # Convert to WAV file
     audio = rearrange(audio, "b d n -> d (b n)")
     audio = audio.to(torch.float32).div(torch.max(torch.abs(audio))).clamp(-1, 1).mul(32767).to(torch.int16).cpu()
-    torchaudio.save("output.wav", audio, sample_rate)
+
+    # Get the current date
+    current_date = datetime.now().strftime("%d-%m-%Y")
+    output_folder = os.path.join("outputs", current_date)
+
+    # Create the directory if it does not exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    def get_unique_filename(base_name, extension):
+        file_path = os.path.join(output_folder, base_name + extension)
+        count = 1
+        while os.path.exists(file_path):
+            file_path = os.path.join(output_folder, f"{base_name} ({count}){extension}")
+            count += 1
+        return file_path
+
+    # Prepare filenames
+    wav_filename = get_unique_filename("output", ".wav")
+    spectrogram_filename = os.path.splitext(wav_filename)[0] + ".png"
+
+    # Save the audio file
+    torchaudio.save(wav_filename, audio, sample_rate)
 
     # Let's look at a nice spectrogram too
     audio_spectrogram = audio_spectrogram_image(audio, sample_rate=sample_rate)
+    audio_spectrogram.save(spectrogram_filename)
 
-    return ("output.wav", [audio_spectrogram, *preview_images])
+    return (wav_filename, [audio_spectrogram, *preview_images])
 
 def generate_uncond(
         steps=250,
