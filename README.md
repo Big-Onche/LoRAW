@@ -1,11 +1,11 @@
 # LoRAW UI
-Low Rank Adaptation for Waveforms with auto-installer and GUI to set up LoRA training.
+Low Rank Adaptation for Waveforms, with auto-installer and GUI to set up [Stable Audio 1.0 open](https://huggingface.co/stabilityai/stable-audio-open-1.0) LoRA training.
 
-Highly experimental still
+Based on [LoRAW](https://github.com/NeuralNotW0rk/LoRAW) and [Stable Audio Tools](https://github.com/Stability-AI/stable-audio-tools)
 
 # Installation
 **Automatic installation:**
-Clone this repo and run the install script based on your OS.
+Clone this repo ('git clone https://github.com/Big-Onche/LoRAW.git') and run the install script based on your OS.
 
 **Manual installation:**
 - Clone the repository `git clone https://github.com/Big-Onche/LoRAW.git`
@@ -17,9 +17,9 @@ Clone this repo and run the install script based on your OS.
 - Install torch: pip install torch==2.4.1+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 - Run setup.py: `pip install .\loraw`
 
-## Inference
+# Inference
 - Download [Stable Audio 1.0 checkpoint](https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt) and put it in 'LoRAW/models/checkpoints'
-- Launch Gradio using the run script based on your OS.
+- Launch the Gradio interface using the run script based on your OS.
 
 # LoRA Training
 - Setup your dataset
@@ -27,16 +27,21 @@ Clone this repo and run the install script based on your OS.
   - The text files should contain the prompts based on the audio sample.
   - Tweak 'config.json', and 'metadata.py' from the folder datasets/example according to your dataset.
   - Supported audio formats: flac, wav, mp3, m4a, ogg, opus.
-- Launch the GUI using the Train script based on your OS.
+- Launch the GUI using the run script based on your OS.
 - Select your dataset's config.json file in 'Dataset Config'
+- Adjust learning rate, network dimension, and network alpha if needed.
 - Launch the training.
 
-#  First impressions on LoRA training
-- Sound effect: With a single sound effect and some speed and pitch variations like in the example dataset, you can get a good convergence after 200/300 steps to create "natural" variations of the same sound.
-- Music instruments: The convergence seems fast as the sound effects, but a wider dataset will be better for melody diversity.
-- Music style: It seems to require many more steps to get something.
-- Melody: Not tested.
-- Voices: Not tested.
+##  First impressions on LoRA training
+| Type of sound       | Steps  | Learning rate  | Network dim/alpha | Comment                                                                                   |
+|---------------------|--------|----------------|-------------------|-------------------------------------------------------------------------------------------|
+| Single sound effect | 200-300 | 0.0001 | 16/16 | With a single sound effect and some speed and pitch variations, like in the example dataset, you can achieve a good convergence to create "natural" variations of the same sound. |
+| Multiple sound effects | / | / | / | Not tested. |
+| Music instruments    | 200-300 | 0.0001 | 16/16 | The convergence seems fast as the sound effects, but a wider dataset will be better for melody diversity. |
+| Drone/ambient        | 400-500 | 0.0001 | 16/16 | Can easily replicate drone and ambient styles. |
+| Music style          | 1000+   | 0.0001 or higher? | May require higher than 16 in neural dim | It seems to require many steps to get something, separating percussion, bass, melodies, etc. in the dataset appears to help. |
+| Melody               | / | / | / | Not tested |
+| Voice                | / | / | / | Not tested |
 
 ## Configure model
 ```JSON
@@ -115,5 +120,6 @@ For training to work manually, you need to:
 - Update the optimizer to use the lora parameters (the same parameters as the previous step)
 
 # References
+- https://github.com/NeuralNotW0rk/LoRAW
 - https://github.com/cloneofsimo/lora
 - https://github.com/kohya-ss/sd-scripts/blob/main/networks/lora.py
