@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import json
 import customtkinter as ctk
 
 ctk.set_appearance_mode("System")
@@ -99,7 +100,7 @@ class Tabs(ctk.CTkTabview):
 		
         self.ui.UI_browse_row(tab, 0, "Checkpoint Path", self.app.pretrained_ckpt_path, "Select model checkpoint", True, "ckpt")
         self.ui.UI_browse_row(tab, 1, "Model Config", self.app.model_config, "Select model configuration file", True, "json")
-        self.ui.UI_browse_row(tab, 2, "Dataset Config", self.app.dataset_config, "Select dataset configuration file", True, "json")
+        self.ui.UI_browse_row(tab, 2, "Dataset Path", self.app.dataset_path, "Select dataset folder")
         self.ui.UI_browse_row(tab, 3, "Pretrained LoRA Checkpoint", self.app.lora_ckpt_path, "Select LoRA checkpoint", True, "ckpt")
         self.ui.UI_browse_row(tab, 4, "Save Directory", self.app.save_dir)
         self.ui.UI_slider_row(tab, 5, "Batch Size", self.app.batch_size, 1, 16)
@@ -116,12 +117,13 @@ class Tabs(ctk.CTkTabview):
 
         self.ui.UI_browse_row(tab, 0, "Checkpoint Path", self.app.pretrained_ckpt_path, "Select model checkpoint", True, "ckpt")
         self.ui.UI_browse_row(tab, 1, "Model Config", self.app.model_config, "Select model configuration file", True, "json")
-        self.ui.UI_browse_row(tab, 2, "Dataset Config", self.app.dataset_config, "Select dataset configuration file", True, "json")
+        self.ui.UI_browse_row(tab, 2, "Dataset Path", self.app.dataset_path, "Select dataset folder")
         self.ui.UI_browse_row(tab, 3, "Save Directory", self.app.save_dir)
         self.ui.UI_slider_row(tab, 4, "Batch Size", self.app.batch_size, 1, 16)
         self.ui.UI_slider_row(tab, 5, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
         self.ui.UI_dropdown(tab, 6, "Precision", self.app.precision, options=["16-mixed", "16-true"], tooltip_text="16-true: 8GB VRAM. 16-mixed: 12GB VRAM")
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=7, columnspan=3, pady=10)
+
 
 
 class UIPresets:
@@ -207,18 +209,38 @@ class UIPresets:
 
 
 
+class DatasetConfig:
+    def __init__(self, app):
+        self.app = app
+
+    def Setup_Dataset_Config(self):
+        with open(self.app.dataset_config_path.get(), 'r') as file:
+            data = json.load(file)
+
+        # Modify the "path" value
+        for dataset in data['datasets']:
+            if 'path' in dataset:
+                dataset['path'] = self.app.dataset_path.get()
+
+        with open(self.app.dataset_config_path.get(), 'w') as file:
+            json.dump(data, file, indent=4)
+
+
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.data = DatasetConfig(self)
 
         # Pre-filled fields
-        current_dir = os.getcwd()
-        self.pretrained_ckpt_path = ctk.StringVar(value=os.path.join(current_dir, 'models', 'checkpoints', 'model.ckpt'))
-        self.model_config = ctk.StringVar(value=os.path.join(current_dir, 'models', 'checkpoints', 'model_config.json'))
-        self.save_dir = ctk.StringVar(value=os.path.join(current_dir, 'models', 'loras'))
+        self.working_dir = os.getcwd()
+        self.dataset_config_path = ctk.StringVar(value=os.path.join(self.working_dir, 'config', 'dataset_config.json'))
+        self.pretrained_ckpt_path = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'checkpoints', 'model.ckpt'))
+        self.model_config = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'checkpoints', 'model_config.json'))
+        self.save_dir = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'loras'))
         self.lora_dir = self.save_dir
         self.lora_ckpt_path = ctk.StringVar()
-        self.dataset_config = ctk.StringVar(value=os.path.join(current_dir, 'datasets', 'example', 'config.json'))
+        self.dataset_path = ctk.StringVar(value=os.path.join(self.working_dir, 'datasets', 'example'))
         self.batch_size = ctk.IntVar(value=4)
         self.ckpt_every = ctk.IntVar(value=500)
         self.train_lora = ctk.StringVar(value="true")
@@ -229,7 +251,7 @@ class App(ctk.CTk):
         self.precision = ctk.StringVar(value="16-mixed")
 
         # Configure window
-        self.title("LoRAW UI v0.3")
+        self.title("LoRAW UI v0.4")
         width = 792
         height = 510
         self.geometry(f"{width}x{height}")
@@ -245,17 +267,17 @@ class App(ctk.CTk):
 
     def launch(self, training=False):
         # Get the current working directory
-        current_dir = os.getcwd()
+        self.data.Setup_Dataset_Config()
 
         # Set PYTHONPATH to include current directory and loraw subfolder
         env = os.environ.copy()
-        env["PYTHONPATH"] = f"{current_dir}{os.pathsep}{os.path.join(current_dir, 'loraw')}"
+        env["PYTHONPATH"] = f"{self.working_dir}{os.pathsep}{os.path.join(self.working_dir, 'loraw')}"
 
         # Determine the path to the Python executable inside the virtual environment
         if sys.platform == "win32":
-            python_executable = os.path.join(current_dir, 'env', 'Scripts', 'python.exe')
+            python_executable = os.path.join(self.working_dir, 'env', 'Scripts', 'python.exe')
         else:
-            python_executable = os.path.join(current_dir, 'env', 'bin', 'python')
+            python_executable = os.path.join(self.working_dir, 'env', 'bin', 'python')
 
         # Ensure the virtual environment's Python is being used
         if not os.path.exists(python_executable):
@@ -269,7 +291,7 @@ class App(ctk.CTk):
                 f'--model-config={self.model_config.get()}',
                 f'--save-dir={self.save_dir.get()}',
                 f'--lora-ckpt-path={self.lora_ckpt_path.get()}',
-                f'--dataset-config={self.dataset_config.get()}',
+                f'--dataset-config={self.dataset_config_path.get()}',
                 f'--batch-size={self.batch_size.get()}',
                 f'--checkpoint-every={self.ckpt_every.get()}',
                 f'--use-lora={self.train_lora.get()}',
