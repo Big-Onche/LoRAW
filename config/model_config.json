@@ -14,8 +14,20 @@
                     "config": {
                         "in_channels": 2,
                         "channels": 128,
-                        "c_mults": [1, 2, 4, 8, 16],
-                        "strides": [2, 4, 4, 8, 8],
+                        "c_mults": [
+                            1,
+                            2,
+                            4,
+                            8,
+                            16
+                        ],
+                        "strides": [
+                            2,
+                            4,
+                            4,
+                            8,
+                            8
+                        ],
                         "latent_dim": 128,
                         "use_snake": true
                     }
@@ -25,8 +37,20 @@
                     "config": {
                         "out_channels": 2,
                         "channels": 128,
-                        "c_mults": [1, 2, 4, 8, 16],
-                        "strides": [2, 4, 4, 8, 8],
+                        "c_mults": [
+                            1,
+                            2,
+                            4,
+                            8,
+                            16
+                        ],
+                        "strides": [
+                            2,
+                            4,
+                            4,
+                            8,
+                            8
+                        ],
                         "latent_dim": 64,
                         "use_snake": true,
                         "final_tanh": false
@@ -70,8 +94,15 @@
             "cond_dim": 768
         },
         "diffusion": {
-            "cross_attention_cond_ids": ["prompt", "seconds_start", "seconds_total"],
-            "global_cond_ids": ["seconds_start", "seconds_total"],
+            "cross_attention_cond_ids": [
+                "prompt",
+                "seconds_start",
+                "seconds_total"
+            ],
+            "global_cond_ids": [
+                "seconds_start",
+                "seconds_total"
+            ],
             "type": "dit",
             "config": {
                 "io_channels": 64,
@@ -94,9 +125,12 @@
                 "optimizer": {
                     "type": "AdamW",
                     "config": {
-                        "lr": 5e-5,
-                        "betas": [0.9, 0.999],
-                        "weight_decay": 1e-3
+                        "lr": 5e-05,
+                        "betas": [
+                            0.9,
+                            0.999
+                        ],
+                        "weight_decay": 0.001
                     }
                 },
                 "scheduler": {
@@ -112,22 +146,39 @@
         "demo": {
             "demo_every": 100,
             "demo_steps": 100,
-            "num_demos": 2,
+            "num_demos": 3,
             "demo_cond": [
-                {"prompt": "shotgun shot with shells falling", "seconds_start": 0, "seconds_total": 5},
-                {"prompt": "shotgun shot with shells falling, battlefield ambience with distant shots", "seconds_start": 0, "seconds_total": 47}
+                {
+                    "prompt": "Prompt for demo 1",
+                    "seconds_start": 0,
+                    "seconds_total": 47
+                },
+                {
+                    "prompt": "Prompt for demo 2",
+                    "seconds_start": 0,
+                    "seconds_total": 47
+                },
+                {
+                    "prompt": "Prompt for demo 3",
+                    "seconds_start": 0,
+                    "seconds_total": 47
+                }
             ],
-            "demo_cfg_scales": [7]
+            "demo_cfg_scales": [
+                7
+            ]
         }
     },
     "lora": {
-        "component_whitelist": ["transformer"],
+        "component_whitelist": [
+            "transformer"
+        ],
         "multiplier": 1.0,
         "rank": 16,
         "alpha": 16,
         "dropout": 0,
         "module_dropout": 0,
-        "lr": 1e-4,
+        "lr": 0.0001,
         "weight_decompose": true
     }
 }

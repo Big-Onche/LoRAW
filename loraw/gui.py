@@ -16,6 +16,7 @@ class ToolTip:
         self.widget.bind("<Enter>", self.show_tooltip)
         self.widget.bind("<Leave>", self.hide_tooltip)
 
+
     def show_tooltip(self, event=None):
         # Create a small window for the tooltip
         if self.tooltip_window or not self.text:
@@ -37,6 +38,7 @@ class ToolTip:
         label = ctk.CTkLabel(frame, text=self.text, text_color="white")
         label.pack(padx=10, pady=5)
 
+
     def hide_tooltip(self, event=None):
         if self.tooltip_window:
             self.tooltip_window.destroy()
@@ -54,14 +56,15 @@ class Tabs(ctk.CTkTabview):
         self.add("Run Stable Audio 1.0")
         self.add("Train a LoRA")
         self.add("Finetune Stable Audio")
-		
+        self.add("Demos settings")
+
         # Configure overall tab appearance
-        self.configure(height=480, border_color="red")
+        self.configure(height=520)
         for button in self._segmented_button._buttons_dict.values():
             button.configure(width=170, height=30, font=("TkDefaultFont", 14, "bold"))
 
         # Configure columns
-        for tab_name in ["Run Stable Audio 1.0", "Train a LoRA", "Finetune Stable Audio"]:
+        for tab_name in ["Run Stable Audio 1.0", "Train a LoRA", "Finetune Stable Audio", "Demos settings"]:
             tab = self.tab(tab_name)
             tab.grid_columnconfigure(0, minsize=180)
             tab.grid_columnconfigure(1, minsize=400)
@@ -83,6 +86,8 @@ class Tabs(ctk.CTkTabview):
             self.show_lora_train_tab()
         elif selected_tab_name == "Finetune Stable Audio":
             self.show_finetune_tab()
+        elif selected_tab_name == "Demos settings":
+            self.show_demo_tab()
 
     def show_inference_tab(self):
         tab = self.tab("Run Stable Audio 1.0")
@@ -108,7 +113,8 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, False, True)
         self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, False, True)
         self.ui.UI_slider_row(tab, 9, "Learning rate", self.app.learning_rate, 0.00001, 0.001, True)
-        ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
+        self.ui.UI_string_row(tab, 10, "Default prompt (trigger)", self.app.default_prompt)
+        ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=11, columnspan=3, pady=10)
 
 
     def show_finetune_tab(self):
@@ -125,6 +131,23 @@ class Tabs(ctk.CTkTabview):
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=7, columnspan=3, pady=10)
 
 
+    def show_demo_tab(self):
+        tab = self.tab("Demos settings")
+
+        self.ui.UI_slider_row(tab, 0, "Demo every (steps)", self.app.demos_every, 10, 1000)
+        self.ui.UI_slider_row(tab, 1, "Amount of demos", self.app.num_demos, 1, 3)
+        self.ui.UI_slider_row(tab, 2, "Demos steps", self.app.demos_steps, 10, 150)
+        self.ui.UI_slider_row(tab, 3, "Demos CFGs", self.app.demos_cfgs, 1, 20)
+
+        self.ui.UI_h_bar(tab, 4)
+
+        for it in range(self.app.num_demos.get()):
+            p_row = 5 + 2 * it
+            l_row = 6 + 2 * it
+            self.ui.UI_string_row(tab, p_row, f"Demo {it+1} prompt", self.app.demos_prompts[it])
+            self.ui.UI_slider_row(tab, l_row, f"Demo {it+1} length (secs)", self.app.demos_lengths[it], 1, 47)
+
+
 
 class UIPresets:
     def __init__(self, app):
@@ -138,6 +161,11 @@ class UIPresets:
             ctk.CTkButton(parent, text="Browse", command=lambda: self.browse_file(browse_text, [(f"{extension} files", f"*.{extension}")], var)).grid(row=row, column=2, padx=5, pady=5)
         else:
             ctk.CTkButton(parent, text="Browse", command=lambda: self.browse_folder(var)).grid(row=row, column=2, padx=5, pady=5)
+
+
+    def UI_string_row(self, parent, row, ui_text, var, browse_text=""):
+        ctk.CTkLabel(parent, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
+        ctk.CTkEntry(parent, textvariable=var, width=400).grid(row=row, column=1, padx=5, pady=5)
 
 
     def UI_slider_row(self, parent, row, ui_text, var, min_val, max_val, float_val=False, pow_two=False):
@@ -172,9 +200,6 @@ class UIPresets:
         slider.grid(row=row, column=1, padx=5, pady=5, sticky='ew')
         ctk.CTkEntry(parent, textvariable=var, width=140).grid(row=row, column=2, padx=5, pady=5)
 
-        if pow_two:
-            enforce_power_of_two(var.get())
-
 
     def UI_checkbox(self, parent, row, ui_text, var, tooltip_text=""):
         ctk.CTkLabel(parent, text=ui_text).grid(row=row, column=0, padx=5, pady=5, sticky='w')
@@ -191,6 +216,10 @@ class UIPresets:
 
         if tooltip_text:
             ToolTip(dropdown, tooltip_text)
+
+    def UI_h_bar(self, parent, row, pady=20, height=2, width=450):
+        separator = ctk.CTkFrame(parent, height=height, width=width, fg_color="gray")
+        separator.grid(row=row, column=0, columnspan=3, pady=pady, padx=5, sticky='ew')
 
 
     def browse_file(self, title, type, var):
@@ -213,7 +242,7 @@ class DatasetConfig:
     def __init__(self, app):
         self.app = app
 
-    def Setup_Dataset_Config(self):
+    def apply_dataset_config(self):
         with open(self.app.dataset_config_path.get(), 'r') as file:
             data = json.load(file)
 
@@ -221,8 +250,46 @@ class DatasetConfig:
         for dataset in data['datasets']:
             if 'path' in dataset:
                 dataset['path'] = self.app.dataset_path.get()
+            if 'default_prompt' in dataset:
+                dataset['default_prompt'] = self.app.default_prompt.get()
 
         with open(self.app.dataset_config_path.get(), 'w') as file:
+            json.dump(data, file, indent=4)
+
+
+    def apply_demo_config(self):
+        with open(self.app.model_config.get(), 'r') as file:
+            data = json.load(file)
+
+        demo_settings = data['training']['demo']
+    
+        if 'demo_every' in demo_settings:
+            demo_settings['demo_every'] = self.app.demos_every.get()
+        if 'demo_steps' in demo_settings:
+            demo_settings['demo_steps'] = self.app.demos_steps.get()
+        if 'num_demos' in demo_settings:
+            demo_settings['num_demos'] = self.app.num_demos.get()
+
+        if 'demo_cond' in demo_settings:
+            demo_settings['demo_cond'] = []  # Empty the existing demo_cond
+            num_demos = self.app.num_demos.get()
+
+            demo_conditions = []  # Initialize an empty list
+
+            if num_demos >= 1:
+                demo_conditions.append({"prompt": self.app.demos_prompts[0].get(), "seconds_start": 0, "seconds_total": self.app.demos_lengths[0].get()})
+            if num_demos >= 2:
+                demo_conditions.append({"prompt": self.app.demos_prompts[1].get(), "seconds_start": 0, "seconds_total": self.app.demos_lengths[1].get()})
+            if num_demos >= 3:
+                demo_conditions.append({"prompt": self.app.demos_prompts[2].get(), "seconds_start": 0, "seconds_total": self.app.demos_lengths[2].get()})
+
+            # Assign the demo_conditions to demo_settings['demo_cond']
+            demo_settings['demo_cond'] = demo_conditions
+
+        if 'demo_cfg_scales' in demo_settings:
+            demo_settings['demo_cfg_scales'] = [self.app.demos_cfgs.get()]
+
+        with open(self.app.model_config.get(), 'w') as file:
             json.dump(data, file, indent=4)
 
 
@@ -236,7 +303,7 @@ class App(ctk.CTk):
         self.working_dir = os.getcwd()
         self.dataset_config_path = ctk.StringVar(value=os.path.join(self.working_dir, 'config', 'dataset_config.json'))
         self.pretrained_ckpt_path = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'checkpoints', 'model.ckpt'))
-        self.model_config = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'checkpoints', 'model_config.json'))
+        self.model_config = ctk.StringVar(value=os.path.join(self.working_dir, 'config', 'model_config.json'))
         self.save_dir = ctk.StringVar(value=os.path.join(self.working_dir, 'models', 'loras'))
         self.lora_dir = self.save_dir
         self.lora_ckpt_path = ctk.StringVar()
@@ -247,13 +314,28 @@ class App(ctk.CTk):
         self.lora_rank = ctk.IntVar(value=16)
         self.lora_alpha = ctk.IntVar(value=16)
         self.learning_rate = ctk.DoubleVar(value=1e-4)
+        self.default_prompt = ctk.StringVar(value="MyLoRATrigger")
         self.model_half = ctk.StringVar(value="false")
         self.precision = ctk.StringVar(value="16-mixed")
+        self.num_demos = ctk.IntVar(value="3")
+        self.demos_every = ctk.IntVar(value="100")
+        self.demos_steps = ctk.IntVar(value="100")
+        self.demos_cfgs = ctk.IntVar(value="7")
+        self.demos_prompts = [
+            ctk.StringVar(value="Prompt for demo 1"),
+            ctk.StringVar(value="Prompt for demo 2"),
+            ctk.StringVar(value="Prompt for demo 3")
+        ]
+        self.demos_lengths = [
+            ctk.IntVar(value=47),
+            ctk.IntVar(value=47),
+            ctk.IntVar(value=47)
+        ]
 
         # Configure window
-        self.title("LoRAW UI v0.4")
+        self.title("LoRAW UI v0.5")
         width = 792
-        height = 510
+        height = 560
         self.geometry(f"{width}x{height}")
         self.resizable(False, False)
         x = (self.winfo_screenwidth() // 2) - (width // 2)
@@ -266,8 +348,8 @@ class App(ctk.CTk):
 
 
     def launch(self, training=False):
-        # Get the current working directory
-        self.data.Setup_Dataset_Config()
+        self.data.apply_dataset_config()
+        self.data.apply_demo_config()
 
         # Set PYTHONPATH to include current directory and loraw subfolder
         env = os.environ.copy()
