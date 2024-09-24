@@ -4,8 +4,8 @@
         {
             "id": "my_audio",
             "path": "datasets/example",
-            "custom_metadata_module": "datasets/example/metadata.py"
+            "custom_metadata_module": "loraw/metadata.py",
+            "default_prompt": "shotgun shot with shells falling"
         }
-    ],
-    "random_crop": true
+    ]
 }
