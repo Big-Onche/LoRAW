@@ -105,7 +105,7 @@ class Tabs(ctk.CTkTabview):
         self.ui.UI_browse_row(tab, 4, "Save Directory", self.app.save_dir)
         self.ui.UI_slider_row(tab, 5, "Batch Size", self.app.batch_size, 1, 16)
         self.ui.UI_slider_row(tab, 6, "Checkpoint every (steps)", self.app.ckpt_every, 10, 10000)
-        self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, True)
+        self.ui.UI_slider_row(tab, 7, "Network Rank (Dimension)", self.app.lora_rank, 4, 128, False, True)
         self.ui.UI_slider_row(tab, 8, "Network Alpha", self.app.lora_alpha, 4, 128, False, True)
         self.ui.UI_slider_row(tab, 9, "Learning rate", self.app.learning_rate, 0.00001, 0.001, True)
         ctk.CTkButton(tab, text="Launch Training", command=lambda: self.app.launch(True)).grid(row=10, columnspan=3, pady=10)
