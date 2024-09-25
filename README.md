@@ -1,132 +1,62 @@
-# LoRAW UI
-Low Rank Adaptation for Waveforms, with auto-installer and GUI to set up [Stable Audio 1.0 open](https://huggingface.co/stabilityai/stable-audio-open-1.0) LoRA training.
+#  🔊 LoRAW UI
+Low Rank Adaptation for Waveforms, with auto-installer and GUI to set up [Stable Audio 1.0 open](https://huggingface.co/stabilityai/stable-audio-open-1.0) LoRA training and model finetunes.
 
 Based on [LoRAW](https://github.com/NeuralNotW0rk/LoRAW) and [Stable Audio Tools](https://github.com/Stability-AI/stable-audio-tools)
 
-# Installation
-**Automatic installation:**
-Clone this repo ('git clone https://github.com/Big-Onche/LoRAW.git') and run the install script based on your OS.
+## ⚙️Installation
+### **Automatic installation:**
+Clone this repo (`git clone https://github.com/Big-Onche/LoRAW.git`) and run the install script based on your OS.
 
-**Manual installation:**
+### **Manual installation:**
 - Clone the repository `git clone https://github.com/Big-Onche/LoRAW.git`
 - Navigate into the cloned directory `cd LoRAW`
 - Set up a virtual environment `python -m venv env`
 - Activate the new environment:
   - Windows: `env\scripts\activate`
   - Linux/Mac: `source env/bin/activate`
-- Install torch: pip install torch==2.4.1+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+- Install torch: `pip install torch==2.4.1+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124`
 - Run setup.py: `pip install .\loraw`
 
-# Inference
+## 🎶 Inference
 **VRAM requirement: 8GB at full precision, 6GB with half precision.**
 
-- Download [Stable Audio 1.0 checkpoint](https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt) and put it in 'LoRAW/models/checkpoints'
+- Download [Stable Audio 1.0 checkpoint](https://huggingface.co/stabilityai/stable-audio-open-1.0/blob/main/model.ckpt) and put it in the folder `LoRAW/models/checkpoints` , you can also put your checkpoint anywhere and select your custom path using the GUI.
 - Launch the Gradio interface using the run script based on your OS.
 
-# LoRA Training
+## 🏋🏼 LoRA Training
 **VRAM requirement: 8GB**
 
-- Setup your dataset
-  - Create a folder with your audio and text files.
-  - The text files should contain the prompts based on the audio sample.
-  - Tweak 'config.json', and 'metadata.py' from the folder datasets/example according to your dataset.
+- Setup your dataset:
+  - Create a folder with your audio files.
+  - For each audio sample, create a .txt file with the same name and in the same folder, the content of the text file should contain the prompts based on the audio sample.
   - Supported audio formats: flac, wav, mp3, m4a, ogg, opus.
 - Launch the GUI using the run script based on your OS.
-- Select your dataset's config.json file in 'Dataset Config'
+- Go to the tab 'Train a LoRA' and select the folder of your dataset
 - Adjust learning rate, network dimension, and network alpha if needed.
+- In the tab 'Demos settings' adjust the demo created during training as needed.
 - Launch the training.
 
-##  First impressions on LoRA training
-| Type of sound       | Steps  | Learning rate  | Network dim/alpha | Comment                                                                                   |
-|---------------------|--------|----------------|-------------------|-------------------------------------------------------------------------------------------|
-| Single sound effect | 200-300 | 0.0001 | 16/16 | With a single sound effect and some speed and pitch variations, like in the example dataset, you can achieve a good convergence to create "natural" variations of the same sound. |
-| Multiple sound effects | / | / | / | Not tested. |
-| Music instruments    | 200-300 | 0.0001 | 16/16 | The convergence seems fast as the sound effects, but a wider dataset will be better for melody diversity. |
-| Drone/ambient        | 400-500 | 0.0001 | 16/16 | Can easily replicate drone and ambient styles. |
-| Music style          | 1000+   | 0.0001 or higher? | May require higher than 16 in neural dim | It seems to require many steps to get something, separating percussion, bass, melodies, etc. in the dataset appears to help. |
-| Melody               | / | / | / | Not tested |
-| Voice                | / | / | / | Not tested |
+## 📝 First impressions on LoRA training
+- With a Learning Rate of 0.0001, 200-300 steps seem to be the sweet spot in most cases, for music styles or drum loops/melodies, more steps should be needed.
+- You can get pretty good results even with small datasets (single sound effect with slight pitch and speed variations)
+- Network rank and alpha of 16 is ok, maybe higher if you want to train on a specific music style.
+- Overfitting sign: The outputs are peppered with short audio glitches, especially for constant sounds like rain, wind, ambient drone music, etc. 
 
-# Pre-trained model fine-tuning 
+| Type of sound  | Comment     |
+|-------------------|-----------------------------------------------------------------------|
+| Single sound effect  | With a single sound effect and some speed and pitch variations, like in the example dataset, you can achieve a good convergence to create "natural" variations of the same sound. |
+| Multiple sound effects | Not tested. |
+| Music instruments |  The convergence seems fast as the sound effects, but a wider dataset will be better for melody diversity. |
+| Drone/ambient |  Can easily replicate drone and ambient styles. |
+| Music style |  It seems to require many steps to get something, separating percussion, bass, melodies, etc. in the dataset appears to help. |
+| Melody | Not tested |
+| Voice |  Like RVC training, a total dataset of 5 - 10 minutes is ok, but expect only gibberish when using it. |
+
+## 🏋🏼 Pre-trained model fine-tuning 
 **VRAM requirement: 12GB with 16-mixed, 8GB with 16-true**
+Not really tested, would take days to get something on my setup.
 
-## Configure model
-```JSON
-"lora": {
-    "component_whitelist": ["transformer"],
-    "multiplier": 1.0,
-    "rank": 16,
-    "alpha": 16,
-    "dropout": 0,
-    "module_dropout": 0,
-    "lr": 1e-4
-}
-```
-
-A full example config that works with stable audio open can be found [here](https://github.com/NeuralNotW0rk/LoRAW/blob/main/examples/model_config.json)
-
-## Set additional args
-Then run the modified `train.py` as you would in [stable-audio-tools](https://github.com/Stability-AI/stable-audio-tools) with the following command line arguments as needed:
-- `--use-lora`
-    - Set to true to enable lora usage
-    - *Default*: false
-- `--lora-ckpt-path`
-    - A pre-trained lora continue from
-- `--relora-every`
-    - Enables ReLoRA training if set
-    - The number of steps between full-rank updates
-    - *Default*: 0
-- `--quantize`
-    - CURRENTLY BROKEN
-    - Set to true to enable 4-bit quantization of base model for QLoRA training
-    - *Default*: false
-
-
-
-# Usage (manual)
-
-## Construction
-Create a loraw using the LoRAWrapper class. For example using a conditional diffusion model for which we only want to target the transformer component:
-```Python
-from loraw.network import LoRAWrapper
-
-lora = LoRAWrapper(
-    target_model,
-    component_whitelist=["transformer"],
-    lora_dim=16,
-    alpha=16,
-    dropout=None,
-    multiplier=1.0
-)
-```
-If using stable-audio-tools, you can create a LoRA based on your model config:
-```Python
-from loraw.network import create_lora_from_config
-
-lora = create_lora_from_config(model_config, target_model)
-```
-
-## Activation
-If you want to load weights into the target model, be sure to do so first as activation will alter the structure and confuse state_dict copying
-```Python
-lora.activate()
-```
-
-## Loading and saving weights
-`lora.load_weights(path)` and `lora.save_weights(path)` are for simple file IO. `lora.merge_weights(path)` can be used to add more checkpoints without overwriting the current state.
-
-## Training
-With stable-audio-tools, after activation, you can simply call
-```Python
-lora.prepare_for_training(training_wrapper)
-```
-
-For training to work manually, you need to:
-- Set all original weights to `requires_grad = False`
-- Set lora weights set to `requires_grad = True` (easily accessed with `lora.residual_modules.parameters()`)
-- Update the optimizer to use the lora parameters (the same parameters as the previous step)
-
-# References
+## 🔗 References
 - https://github.com/NeuralNotW0rk/LoRAW
 - https://github.com/cloneofsimo/lora
 - https://github.com/kohya-ss/sd-scripts/blob/main/networks/lora.py
